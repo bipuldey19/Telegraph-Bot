@@ -14,9 +14,6 @@
             "description": "Get this value from @BotFather"
         }
     },
-    "buildpacks": [{
-        "url": "heroku/node.js"
-      }],
     "formation": {
         "web": {
             "quantity": 1,
