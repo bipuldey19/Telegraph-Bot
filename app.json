@@ -1,0 +1,26 @@
+{
+    "name": "Telegraph Bot",
+    "description": "A NodeJs Telegram bot to access Telegra.ph from Telegram.",
+    "keywords": [
+        "telegram",
+        "telegraph",
+        "node"
+      ],
+    "repository": "https://github.com/eyMarv/ultraMarv-roku",
+    "success_url": "/",
+    "website": "https://github.com/eyMarv/ultraMarv-roku",
+    "env": {
+        "BOT_TOKEN": {
+            "description": "Get this value from @BotFather"
+        }
+    },
+    "buildpacks": [{
+        "url": "heroku/node.js"
+      }],
+    "formation": {
+        "web": {
+            "quantity": 1,
+            "size": "free"
+        }
+    }
+  }

@@ -1,13 +1,13 @@
 {
   "name": "telegraph-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "A NodeJs Telegram bot to access Telegra.ph from Telegram.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "author": "",
+  "author": "https://github.com/bipuldey19",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.0.0",
