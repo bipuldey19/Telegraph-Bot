@@ -7,7 +7,10 @@ const app = express();
 app.get("/", (request, response) => {
     response.send("Bot is running!!!");
 });
+
 const token = process.env.BOT_TOKEN; //Telegram bot token
+const TELEGRAPH_TOKEN = process.env.TELEGRAPH_TOKEN; //Telegraph token
+
 const bot = new TelegramBot(token, {
     polling: true
 });
@@ -20,18 +23,29 @@ const ph = new telegraph()
 
 //Setting bot commands
 bot.setMyCommands([{
-    command: '/start',
-    description: 'Check if I am alive'
-}],
-[{
-    command: '/createAccount',
-    description: 'Create a new account on telegraph | /createAccount SHORTNAME FULLNAME'
-}])
+        command: '/start',
+        description: 'Check if I am alive'
+    }],
+    [{
+        command: '/createAccount',
+        description: 'Create a new account on telegraph >>> /createAccount SHORTNAME FULLNAME'
+    }],
+    [{
+        command: '/createPost',
+        description: 'Create a new post on telegraph >>> /createPost TITLE | CONTENT'
+    }],
+    [{
+        command: '/editPost',
+        description: 'Edit post on telegraph >>> /editPost PATH | TITLE | CONTENT'
+    }]
+    )
 
+// Start
 bot.onText(/\/start/, (msg) => {
     bot.sendMessage(msg.chat.id, 'Hello there!!! I am a bot created by @bipuldey19');
 });
 
+// Create account
 bot.onText(/\/createAccount/, (msg) => {
     var names = msg.text.toString().replace(/createAccount |\//g, '');
     var name = names.split(' ');
@@ -47,7 +61,7 @@ bot.onText(/\/createAccount/, (msg) => {
                 author_name: fullName
             }).then(async (account) => {
                 console.log(account)
-                const auth = {
+                var auth = {
                     reply_markup: {
                         "inline_keyboard": [
                             [{
@@ -55,7 +69,7 @@ bot.onText(/\/createAccount/, (msg) => {
                                 "url": account.auth_url
                             }]
                         ]
-                    }, 
+                    },
                     parse_mode: 'Markdown'
                 }
                 var details = "✅ *Account created Successfully!*\n\n🔰 *Account Details:*\n💠Short Name: " + "_" + account.short_name + "_" +
@@ -73,13 +87,97 @@ bot.onText(/\/createAccount/, (msg) => {
 
 });
 
+// Create post
+bot.onText(/\/createPost/, (msg) => {
+    var text = msg.text.toString().replace(/\/createPost |\//g, '');
+    var split = text.split(' | ');
+    var title = split[0];
+    var desc = split[1];
+
+    ph.createPage(TELEGRAPH_TOKEN, title, [{
+            tag: 'p',
+            children: [desc]
+        }], {
+            return_content: true
+        }).then(async (result) => {
+            console.log(result)
+            var visit = {
+                reply_markup: {
+                    "inline_keyboard": [
+                        [{
+                            "text": "🌐 Visit Page",
+                            "url": result.url
+                        }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            }
+            var return_content = "✅ *Telegra.ph post created Successfully!*\n\n🔰 *Details:*\n💠Title: " + "_" + result.title + "_" +
+                "\n💠Path: " + "```" + result.path + "```" +
+                "\n💠URL: \n" + "```" + result.url + "```";
+            await bot.sendChatAction(msg.chat.id, 'typing');
+            await bot.sendMessage(msg.chat.id, return_content, visit);
+        })
+        .catch(async (err) => {
+            await bot.sendChatAction(msg.chat.id, 'typing');
+            await bot.sendMessage(msg.chat.id, "⚠️ Please give me your Title & your Content !\n⭕ Or see /help")
+        });
+});
+
+// Edit post
+bot.onText(/\/editPost/, (msg) => {
+    var text = msg.text.toString().replace(/\/editPost |\//g, '');
+    var split = text.split(' | ');
+    var path = split[0];
+    var title = split[1];
+    var desc = split[2];
+    ph.editPage(TELEGRAPH_TOKEN, path, title, [{
+            tag: 'p',
+            children: [desc]
+        }], {
+            return_content: true
+        }).then(async (result) => {
+            console.log(result)
+            var visit = {
+                reply_markup: {
+                    "inline_keyboard": [
+                        [{
+                            "text": "🌐 Visit Page",
+                            "url": result.url
+                        }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            }
+            var return_content = "✅ *Telegra.ph post edited Successfully!*\n\n🔰 *Details:*\n💠Title: " + "_" + result.title + "_" +
+                "\n💠Path: " + "```" + result.path + "```" +
+                "\n💠URL: \n" + "```" + result.url + "```";
+            await bot.sendChatAction(msg.chat.id, 'typing');
+            await bot.sendMessage(msg.chat.id, return_content, visit);
+        })
+        .catch((err) => {
+            console.log(err)
+            if (err.message.includes('PAGE_NOT_FOUND')) {
+                bot.sendChatAction(msg.chat.id, 'typing');
+                bot.sendMessage(msg.chat.id, "⚠️ *Invalid Path* !\n\n💠Give me a valid PATH!\n💠_Or see /help_", {parse_mode: 'Markdown'});
+            }
+            if (err.message.includes('TITLE_REQUIRED')) {
+                bot.sendChatAction(msg.chat.id, 'typing');
+                bot.sendMessage(msg.chat.id, "⚠️ *Please give me your Title & your Content !* !\n\n💠_Or see /help_", {parse_mode: 'Markdown'});
+            }
+            // await bot.sendChatAction(msg.chat.id, 'typing');
+            // await bot.sendMessage(msg.chat.id, "⚠️ Please give me your Title & your Content !\n⭕ Or see /help")
+        });
+});
+
+// Media upload
 bot.on('message', async (msg) => {
     console.log(msg)
     // For documents
     if (msg.document != undefined) {
         await bot.sendMessage(msg.chat.id, '⚙️ Uploading file & making links...');
         bot.getFileLink(msg.document.file_id)
-        .then(async link => {
+            .then(async link => {
                 await uploadByUrl(link)
                     .then(async (result) => {
                         var doctype = msg.document.mime_type;
@@ -87,9 +185,9 @@ bot.on('message', async (msg) => {
                         var desc = "*✅ File uploaded to telegraph!*\n\n" +
                             "📄 *File Type:* " + doctype + "\n" +
                             "🔗 *Link:*\n" + "```" + docurl + "```";
-                            await bot.sendChatAction(msg.chat.id, 'typing');
-                            await bot.sendMessage(msg.chat.id, desc, {
-                                parse_mode: "Markdown"
+                        await bot.sendChatAction(msg.chat.id, 'typing');
+                        await bot.sendMessage(msg.chat.id, desc, {
+                            parse_mode: "Markdown"
                         });
                     })
                     .catch(error => {
